@@ -19,21 +19,17 @@ public class Encoder<T extends Serializable> {
 
     private Kryo kryo;
 
-    private boolean registerClass;
-
     public Encoder() {
         kryo = new Kryo();
     }
 
     public Encoder(Class<?> clazz) {
         kryo = new Kryo();
-        kryo.setRegistrationRequired(registerClass);
+        kryo.setRegistrationRequired(true);
         kryo.register(clazz);
     }
 
     public byte[] encode(T object) {
-
-
         byte [] encodedData = SerializationUtils.serialize(object);
         Output output = new Output(encodedData);
         kryo.writeClassAndObject(output, object);

@@ -24,23 +24,24 @@ public class ReadersAndWritersTest {
     /** A logger for this class. */
     private static final Logger logger = LoggerFactory.getLogger(ReadersAndWritersTest.class);
 
-
+    /**
+     *
+     * @throws IOException
+     * @throws InterruptedException
+     */
     @Test
     public void testReadAndWrite() throws IOException, InterruptedException {
-
-        CountDownLatch countDownLatch = new CountDownLatch(1);
         MessageReader<BasicMessage> reader = new MessageReader<>(12345, BasicMessage.class);
         MessageWriter<BasicMessage> writer = new MessageWriter<>("localhost", 12345, BasicMessage.class);
 
-        (new Thread( () -> {
-            reader.start(2);
-            countDownLatch.countDown();
-        })).start();
+        reader.start();
+        writer.start();
 
         writer.write(new BasicMessage<>("Hello world!"));
         writer.write(new BasicMessage<>("Hello world again!"));
 
-        countDownLatch.await(10L, TimeUnit.SECONDS);
+        writer.stop();
+        reader.stop();
 
         assertEquals("Reader should have received 2 messages.", 2, reader.getMessagesProcessed());
         assertEquals("Writer should have written 2 messages.", 2, writer.getMessagesProcessed());

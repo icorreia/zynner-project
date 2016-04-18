@@ -1,60 +1,78 @@
 package com.icorreia.zmz.readers;
 
+import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryonet.Connection;
+import com.esotericsoftware.kryonet.Listener;
+import com.esotericsoftware.kryonet.Server;
+import com.icorreia.commons.messaging.BasicMessage;
 import com.icorreia.commons.messaging.Message;
 import com.icorreia.commons.serialization.Decoder;
-import com.icorreia.zmz.MessageStatistic;
+import com.icorreia.zmz.Messenger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.net.ServerSocket;
-import java.net.Socket;
 
 /**
  *
  * @author Ivo Correia (idvcorreia@gmail.com)
  * @since 0.1
  */
-public class MessageReader<T extends Message> extends MessageStatistic {
+public class MessageReader<T extends Message> extends Messenger {
 
     /** A logger for this class. */
     private static final Logger logger = LoggerFactory.getLogger(MessageReader.class);
 
-    private final ServerSocket incomingSoket;
+    /** */
+    private final Server server;
 
-    private final Decoder<Message> decoder;
+    /** */
+    private final int port;
 
-    public MessageReader(int port, Class<T> clazz) throws IOException {
-        incomingSoket = new ServerSocket(port);
-        decoder = new Decoder<>(clazz);
+    /**
+     *
+     *
+     * @param port
+     * @param clazz
+     */
+    public MessageReader(int port, Class<T> clazz) {
+        super(clazz);
+        this.server = new Server();
+        this.port = port;
     }
 
-    public MessageReader(int port) throws IOException {
-        incomingSoket = new ServerSocket(port);
-        decoder = new Decoder<>();
-    }
+    @Override
+    public void start() {
+        try {
+            server.start();
+            server.bind(port);
+            logger.info("Listening at port {}.", port);
 
-    public void start(final int maxMessages) {
-        int counter = 0;
+            Kryo kryo = server.getKryo();
+            kryo.register(clazz);
 
-        try (Socket conn = incomingSoket.accept()) {
-            logger.info("Connection received from " + conn.getInetAddress().getHostName() + " : " + conn.getPort());
+            final MessageReader reader = this;
 
-            do {
-                logger.info("Reading message...");
-                byte[] dataBuffer = new byte[150];
-                ObjectInputStream ois = new ObjectInputStream(conn.getInputStream());
-                ois.readObject();
-                Message message = decoder.decode(dataBuffer);
-                logger.info("Received message: {}", message.getContents());
-
-                counter++;
-                increaseMessagesProcessed();
-            }
-            while (counter != maxMessages);
+            server.addListener(new Listener() {
+                public void received (Connection connection, Object object) {
+                    if (clazz.isAssignableFrom(object.getClass())) {
+                        T message = (T) object;
+                        logger.info("Received: ''{}.", message.getContents());
+                        reader.increaseMessagesProcessed();
+                    } else {
+                        logger.warn("Object's class '{}' is not assignable to defined reader class '{}'.",
+                                object.getClass(), clazz.getClass());
+                    }
+                }
+            });
 
         } catch (IOException e) {
             logger.error("Exception while reading from socket: ", e);
+            server.close();
         }
+    }
+
+    @Override
+    public void stop() {
+        server.stop();
     }
 }

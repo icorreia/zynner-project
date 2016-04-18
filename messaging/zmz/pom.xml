@@ -24,6 +24,12 @@
             <version>0.1-SNAPSHOT</version>
         </dependency>
 
+        <!-- SERIALIZATION -->
+        <dependency>
+            <groupId>kryonet</groupId>
+            <artifactId>kryonet</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
