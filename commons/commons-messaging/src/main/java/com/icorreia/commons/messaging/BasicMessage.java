@@ -12,6 +12,9 @@ public class BasicMessage<T> implements Message<T> {
 
     private T contents;
 
+    public BasicMessage() {
+
+    }
 
     public BasicMessage(T contents) {
         this.contents = contents;
