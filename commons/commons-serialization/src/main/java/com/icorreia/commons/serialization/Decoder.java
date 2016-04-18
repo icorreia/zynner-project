@@ -13,32 +13,27 @@ import java.io.*;
  * @author Ivo Correia (idvcorreia@gmail.com)
  * @since 0.1
  */
-public class Encoder<T extends Serializable> {
+public class Decoder<T extends Serializable> {
 
     private CompressionCodec compressionCodec;
 
     private Kryo kryo;
 
-    private boolean registerClass;
-
-    public Encoder() {
+    public Decoder() {
         kryo = new Kryo();
     }
 
-    public Encoder(Class<?> clazz) {
+    public Decoder(Class<?> clazz) {
         kryo = new Kryo();
-        kryo.setRegistrationRequired(registerClass);
+        kryo.setRegistrationRequired(true);
         kryo.register(clazz);
     }
 
-    public byte[] encode(T object) {
+    public T decode(byte[] data) {
+        Input input = new Input(data);
+        T decodedData = (T) kryo.readClassAndObject(input);
+        input.close();
 
-
-        byte [] encodedData = SerializationUtils.serialize(object);
-        Output output = new Output(encodedData);
-        kryo.writeClassAndObject(output, object);
-        output.close();
-
-        return encodedData;
+        return decodedData;
     }
 }
