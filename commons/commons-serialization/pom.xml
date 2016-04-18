@@ -12,6 +12,25 @@
     <artifactId>commons-serialization</artifactId>
 
     <dependencies>
+        <!-- PROJECT -->
+        <dependency>
+            <groupId>com.icorreia.zynner</groupId>
+            <artifactId>commons-messaging</artifactId>
+            <version>0.1-SNAPSHOT</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.esotericsoftware</groupId>
+            <artifactId>kryo</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>commons-lang</groupId>
+            <artifactId>commons-lang</artifactId>
+        </dependency>
+
+
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>

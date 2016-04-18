@@ -7,5 +7,5 @@ import java.io.Serializable;
  * @author Ivo Correia (idvcorreia@gmail.com)
  * @since 0.1
  */
-public interface Message extends Serializable {
+public interface Message<T> extends Serializable {
 }
