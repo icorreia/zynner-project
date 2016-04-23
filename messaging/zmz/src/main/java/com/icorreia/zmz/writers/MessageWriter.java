@@ -21,10 +21,10 @@ public class MessageWriter<T extends Message> extends Messenger {
     /** */
     private final Client client;
 
-    /** */
+    /** The port of the server. */
     private final int port;
 
-    /** */
+    /** The hostname of the server. */
     private final String host;
 
     /**
@@ -72,7 +72,7 @@ public class MessageWriter<T extends Message> extends Messenger {
             this.increaseMessagesProcessed();
             return bytesSent;
         } else {
-            logger.warn("Server not connected. Run start() first.");
+            logger.warn("Client not connected. Run start() first.");
             return 0;
         }
     }

@@ -29,7 +29,7 @@ public class MessageReader<T extends Message> extends Messenger {
     /** */
     private final Server server;
 
-    /** */
+    /** Ths server listening port. */
     private final int port;
 
     private final LinkedBlockingQueue<T> messageQueue;
@@ -37,6 +37,10 @@ public class MessageReader<T extends Message> extends Messenger {
     private final Lock queueLock = new ReentrantLock();
 
     private final Condition notEmpty = queueLock.newCondition();
+
+    private String commitLogFolder = "src";
+
+    private CommitCleanupJob compactionJob;
 
     /**
      *
@@ -59,6 +63,8 @@ public class MessageReader<T extends Message> extends Messenger {
         this.server = new Server();
         this.port = port;
         this.messageQueue = new LinkedBlockingQueue<>(capacity);
+
+        this.compactionJob = new CommitCleanupJob();
     }
 
     @Override
