@@ -40,7 +40,7 @@ public class MessageReader<T extends Message> extends Messenger {
 
     private String commitLogFolder = "src";
 
-    private CommitCleanupJob compactionJob;
+    private CommitCleanupJob commitCleanupJob;
 
     /**
      *
@@ -64,7 +64,7 @@ public class MessageReader<T extends Message> extends Messenger {
         this.port = port;
         this.messageQueue = new LinkedBlockingQueue<>(capacity);
 
-        this.compactionJob = new CommitCleanupJob();
+        this.commitCleanupJob = new CommitCleanupJob(commitLogFolder);
     }
 
     @Override
@@ -73,6 +73,10 @@ public class MessageReader<T extends Message> extends Messenger {
             server.start();
             server.bind(port);
             logger.info("Listening at port {}.", port);
+
+            //TODO: Initial cleanup of non-empty folder.
+            Thread cleanupThread = new Thread(commitCleanupJob);
+            cleanupThread.start();
 
             Kryo kryo = server.getKryo();
             kryo.register(clazz);
