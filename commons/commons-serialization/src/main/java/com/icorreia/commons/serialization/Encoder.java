@@ -1,10 +1,8 @@
 package com.icorreia.commons.serialization;
 
 import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.io.OutputChunked;
 import com.icorreia.commons.serialization.compression.CompressionCodec;
-import org.apache.commons.lang.SerializationUtils;
 
 import java.io.*;
 
@@ -19,22 +17,38 @@ public class Encoder<T extends Serializable> {
 
     private Kryo kryo;
 
+    private OutputChunked output;
+
     public Encoder() {
         kryo = new Kryo();
     }
 
-    public Encoder(Class<?> clazz) {
-        kryo = new Kryo();
+    public void registerClass(Class<? extends T> newClazz) {
         kryo.setRegistrationRequired(true);
-        kryo.register(clazz);
+        kryo.register(newClazz);
     }
 
-    public byte[] encode(T object) {
-        byte [] encodedData = SerializationUtils.serialize(object);
-        Output output = new Output(encodedData);
-        kryo.writeClassAndObject(output, object);
-        output.close();
+    public void setOutput(String filename) throws IOException {
+        if (output != null) {
+            output.close();
+        }
 
-        return encodedData;
+        output = new OutputChunked(new FileOutputStream(filename));
+    }
+
+    public void encode(T object) {
+        kryo.writeObject(output, object);
+        output.endChunks();
+    }
+
+    public void encodeWithClass(Object object) {
+        kryo.writeClassAndObject(output, object);
+        output.endChunks();
+    }
+
+    public void close() {
+        if (output != null) {
+            output.close();
+        }
     }
 }

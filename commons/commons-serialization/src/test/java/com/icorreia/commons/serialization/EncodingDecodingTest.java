@@ -4,6 +4,11 @@ import com.icorreia.commons.messaging.BasicMessage;
 import com.icorreia.commons.messaging.Message;
 import org.junit.Test;
 
+import java.io.IOException;
+import java.io.StreamCorruptedException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -18,14 +23,20 @@ public class EncodingDecodingTest {
      * when it is registered in Kryo.
      */
     @Test
-    public void encodeAndDecodeRegisteredBasicMessage() {
-        Encoder<BasicMessage<String>> encoder = new Encoder<>(BasicMessage.class);
-        Decoder<BasicMessage<String>> decoder = new Decoder<>(BasicMessage.class);
+    public void encodeAndDecodeRegisteredBasicMessage() throws IOException {
+        Path commitLog = Files.createTempFile("commit_log", "encodeAndDecodeRegisteredBasicMessage");
+        Encoder<BasicMessage> encoder = new Encoder<>();
+        Decoder<BasicMessage> decoder = new Decoder<>();
 
-        BasicMessage<String> message = new BasicMessage<>("Hello there!");
-        byte[] encodedData = encoder.encode(message);
+        encoder.registerClass(BasicMessage.class);
+        decoder.registerClass(BasicMessage.class);
+        encoder.setOutput(commitLog.toString());
+        decoder.setInput(commitLog.toString());
 
-        assertEquals("Original contents and encoded-decoded contents must match.", message.getContents(), decoder.decode(encodedData).getContents());
+        BasicMessage message = new BasicMessage("Hello there!");
+        encoder.encode(message);
+
+        assertEquals("Original contents and encoded-decoded contents must match.", message.getContents(), decoder.decode(BasicMessage.class).getContents());
     }
 
     /**
@@ -33,14 +44,18 @@ public class EncodingDecodingTest {
      * when it is not registered in Kryo.
      */
     @Test
-    public void encodeAndDecodeUnregisteredBasicMessage() {
-        Encoder<BasicMessage<String>> encoder = new Encoder<>();
-        Decoder<BasicMessage<String>> decoder = new Decoder<>();
+    public void encodeAndDecodeUnregisteredBasicMessage() throws IOException {
+        Path commitLog = Files.createTempFile("commit_log", "encodeAndDecodeUnregisteredBasicMessage");
+        Encoder<BasicMessage> encoder = new Encoder<>();
+        Decoder<BasicMessage> decoder = new Decoder<>();
 
-        BasicMessage<String> message = new BasicMessage<>("Hello there!");
-        byte[] encodedData = encoder.encode(message);
+        encoder.setOutput(commitLog.toString());
+        decoder.setInput(commitLog.toString());
 
-        assertEquals("Original contents and encoded-decoded contents must match.", message.getContents(), decoder.decode(encodedData).getContents());
+        BasicMessage message = new BasicMessage("Hello there!");
+        encoder.encode(message);
+
+        assertEquals("Original contents and encoded-decoded contents must match.", message.getContents(), decoder.decode(BasicMessage.class).getContents());
     }
 
     /**
@@ -48,14 +63,20 @@ public class EncodingDecodingTest {
      * when it is registered in Kryo.
      */
     @Test
-    public void encodeAndDecodeRegisteredString() {
-        Encoder<String> encoder = new Encoder<>(String.class);
-        Decoder<String> decoder = new Decoder<>(String.class);
+    public void encodeAndDecodeRegisteredString() throws IOException {
+        Path commitLog = Files.createTempFile("commit_log", "encodeAndDecodeRegisteredString");
+        Encoder<String> encoder = new Encoder<>();
+        Decoder<String> decoder = new Decoder<>();
+
+        encoder.registerClass(String.class);
+        decoder.registerClass(String.class);
+        encoder.setOutput(commitLog.toString());
+        decoder.setInput(commitLog.toString());
 
         String contents = "Hello there!";
-        byte[] encodedData = encoder.encode(contents);
+        encoder.encode(contents);
 
-        assertEquals("Original contents and encoded-decoded contents must match.", contents, decoder.decode(encodedData));
+        assertEquals("Original contents and encoded-decoded contents must match.", contents, decoder.decode(String.class));
     }
 
     /**
@@ -63,13 +84,68 @@ public class EncodingDecodingTest {
      * when it is not registered in Kryo.
      */
     @Test
-    public void encodeAndDecodeUnregisteredString() {
+    public void encodeAndDecodeUnregisteredString() throws IOException {
+        Path commitLog = Files.createTempFile("commit_log", "encodeAndDecodeUnregisteredString");
         Encoder<String> encoder = new Encoder<>();
         Decoder<String> decoder = new Decoder<>();
 
-        String contents = "Hello there!";
-        byte[] encodedData = encoder.encode(contents);
+        encoder.setOutput(commitLog.toString());
+        decoder.setInput(commitLog.toString());
 
-        assertEquals("Original contents and encoded-decoded contents must match.", contents, decoder.decode(encodedData));
+        String contents = "Hello there!";
+        encoder.encode(contents);
+
+        assertEquals("Original contents and encoded-decoded contents must match.", contents, decoder.decode(String.class));
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void encodeAndDecodeMultipleObjectsSameClass() throws IOException {
+        Path commitLog = Files.createTempFile("commit_log", "encodeAndDecodeUnregisteredString");
+        Encoder<String> encoder = new Encoder<>();
+        Decoder<String> decoder = new Decoder<>();
+
+        encoder.registerClass(String.class);
+        decoder.registerClass(String.class);
+        encoder.setOutput(commitLog.toString());
+        decoder.setInput(commitLog.toString());
+
+        String contents1 = "Hello there!";
+        encoder.encode(contents1);
+        String contents2 = "Hello there too!";
+        encoder.encode(contents2);
+
+        assertEquals("Original contents and encoded-decoded contents must match.", contents1, decoder.decode(String.class));
+        assertEquals("Original contents and encoded-decoded contents must match.", contents2, decoder.decode(String.class));
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void encodeAndDecodeMultipleObjectsDifferentClass() throws IOException {
+        Path commitLog = Files.createTempFile("commit_log", "encodeAndDecodeUnregisteredString");
+        Encoder<Message> encoder = new Encoder<>();
+        Decoder<Message> decoder = new Decoder<>();
+
+        encoder.registerClass(BasicMessage.class);
+        encoder.registerClass(DummyMessage.class);
+        encoder.registerClass(Message.class);
+        decoder.registerClass(BasicMessage.class);
+        decoder.registerClass(DummyMessage.class);
+        decoder.registerClass(Message.class);
+
+        encoder.setOutput(commitLog.toString());
+        decoder.setInput(commitLog.toString());
+
+        Message dummyMessage = new DummyMessage("Hello there!");
+        encoder.encodeWithClass(dummyMessage);
+        Message message = new BasicMessage("Hello there too!");
+        encoder.encodeWithClass(message);
+
+        assertEquals("Original contents and encoded-decoded contents must match.", dummyMessage.getContents(), decoder.decodeWithClass().getContents());
+        assertEquals("Original contents and encoded-decoded contents must match.", message.getContents(), decoder.decodeWithClass().getContents());
     }
 }

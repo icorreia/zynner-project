@@ -1,10 +1,8 @@
 package com.icorreia.commons.serialization;
 
 import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.io.InputChunked;
 import com.icorreia.commons.serialization.compression.CompressionCodec;
-import org.apache.commons.lang.SerializationUtils;
 
 import java.io.*;
 
@@ -19,21 +17,41 @@ public class Decoder<T extends Serializable> {
 
     private Kryo kryo;
 
+    private InputChunked input;
+
     public Decoder() {
         kryo = new Kryo();
     }
 
-    public Decoder(Class<?> clazz) {
-        kryo = new Kryo();
+    public void registerClass(Class<? extends T> newClazz) {
         kryo.setRegistrationRequired(true);
-        kryo.register(clazz);
+        kryo.register(newClazz);
     }
 
-    public T decode(byte[] data) {
-        Input input = new Input(data);
-        T decodedData = (T) kryo.readClassAndObject(input);
-        input.close();
+    public void setInput(String filename) throws IOException {
+        if (input != null) {
+            input.close();
+        }
+        input = new InputChunked(new FileInputStream(filename));
+    }
 
-        return decodedData;
+    public T decode(Class<? extends T> clazz) {
+        T decodedObject = kryo.readObject(input, clazz);
+        input.nextChunks();
+
+        return decodedObject;
+    }
+
+    public T decodeWithClass() {
+        T decodedObject = (T) kryo.readClassAndObject(input);
+        input.nextChunks();
+
+        return decodedObject;
+    }
+
+    public void close() {
+        if (input != null) {
+            input.close();
+        }
     }
 }

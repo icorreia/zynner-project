@@ -9,6 +9,8 @@ import com.icorreia.zmz.Messenger;
 import org.apache.commons.lang.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -27,30 +29,24 @@ public class MessageReader<T extends Message> extends Messenger {
     private static final Logger logger = LoggerFactory.getLogger(MessageReader.class);
 
     /** */
-    private final Server server;
+    private Server server;
 
     /** Ths server listening port. */
-    private final int port;
+    private int port;
 
-    private final LinkedBlockingQueue<T> messageQueue;
+    private LinkedBlockingQueue<T> messageQueue;
 
     private final Lock queueLock = new ReentrantLock();
 
     private final Condition notEmpty = queueLock.newCondition();
 
-    private String commitLogFolder = "src";
+    private long commitLogSize;
+
+    private String commitLogFolder;
 
     private CommitCleanupJob commitCleanupJob;
 
-    /**
-     *
-     *
-     * @param port
-     * @param clazz
-     */
-    public MessageReader(int port, Class<T> clazz) {
-        this(Integer.MAX_VALUE, port, clazz);
-    }
+    private Thread cleanupThread;
 
     /**
      *
@@ -58,13 +54,13 @@ public class MessageReader<T extends Message> extends Messenger {
      * @param port
      * @param clazz
      */
-    public MessageReader(int capacity, int port, Class<T> clazz) {
+    private MessageReader(int capacity, int port, long commitLogSize, String commitLogFolder, Class<T> clazz) {
         super(clazz);
         this.server = new Server();
         this.port = port;
         this.messageQueue = new LinkedBlockingQueue<>(capacity);
-
-        this.commitCleanupJob = new CommitCleanupJob(commitLogFolder);
+        this.commitLogFolder = commitLogFolder;
+        this.commitLogSize = commitLogSize;
     }
 
     @Override
@@ -75,7 +71,8 @@ public class MessageReader<T extends Message> extends Messenger {
             logger.info("Listening at port {}.", port);
 
             //TODO: Initial cleanup of non-empty folder.
-            Thread cleanupThread = new Thread(commitCleanupJob);
+            commitCleanupJob = new CommitCleanupJob();
+            cleanupThread = new Thread(commitCleanupJob);
             cleanupThread.start();
 
             Kryo kryo = server.getKryo();
@@ -89,6 +86,17 @@ public class MessageReader<T extends Message> extends Messenger {
                         T message = (T) object;
                         logger.trace("Received: '{}'.", message.getContents());
                         messageQueue.add(message);
+                        //FIXME
+                        String commitLogFilename = commitLogFolder + File.separatorChar + System.currentTimeMillis();
+                        try {
+                            File commitLog = new File(commitLogFilename);
+                            commitLog.createNewFile();
+                            logger.info("Created file '{}'.", commitLogFilename);
+                            //TODO Maybe change the addition / name
+                            commitCleanupJob.addFileName(commitLogFilename);
+                        } catch (IOException e) {
+                            logger.error("Could not create commit log.", e);
+                        }
                         queueLock.lock();
                         notEmpty.signalAll();
                         queueLock.unlock();
@@ -108,7 +116,14 @@ public class MessageReader<T extends Message> extends Messenger {
 
     @Override
     public void stop() {
-        server.stop();
+        try {
+            cleanupThread.interrupt();
+            cleanupThread.join();
+            server.stop();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            logger.warn("Interrupted while stopping.", e);
+        }
     }
 
     /**
@@ -146,5 +161,55 @@ public class MessageReader<T extends Message> extends Messenger {
         } finally {
             queueLock.unlock();
         }
+    }
+
+
+    /***********************************************************************/
+
+    public static class MessageReaderBuilder<T extends Message> {
+
+        private Class<T> clazz;
+
+        private int port;
+
+        private int capacity = Integer.MAX_VALUE;
+
+        private long commitLogSize;
+
+        private String commitLogFolder = "src/main/java/test/resources";
+
+        public static <T extends Message> MessageReaderBuilder<T> builder() {
+            return new MessageReaderBuilder<>();
+        }
+
+        public MessageReaderBuilder<T> setPort(int port) {
+            this.port = port;
+            return this;
+        }
+
+        public MessageReaderBuilder<T> setCapacity(int capacity) {
+            this.capacity = capacity;
+            return this;
+        }
+
+        public MessageReaderBuilder<T> setClass(Class<T> clazz) {
+            this.clazz = clazz;
+            return this;
+        }
+
+        public MessageReaderBuilder<T> setCommitLogSize(long commitLogSize) {
+            this.commitLogSize = commitLogSize;
+            return this;
+        }
+
+        public MessageReaderBuilder<T> setCommitLogFolder(String commitLogFolder) {
+            this.commitLogFolder = commitLogFolder;
+            return this;
+        }
+
+        public MessageReader<T> build() {
+            return new MessageReader(capacity, port, commitLogSize, commitLogFolder, clazz);
+        }
+
     }
 }

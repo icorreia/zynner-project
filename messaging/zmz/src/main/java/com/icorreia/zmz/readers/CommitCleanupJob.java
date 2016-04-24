@@ -19,16 +19,13 @@ public class CommitCleanupJob implements Runnable {
 
     private final LinkedBlockingQueue<String> commitLogFileNames;
 
-    private final String commitFolder;
-
-    public CommitCleanupJob(String compactionFolder) {
-        this(compactionFolder, Integer.MAX_VALUE);
+    public CommitCleanupJob() {
+        this(Integer.MAX_VALUE);
     }
 
 
-    public CommitCleanupJob(String commitFolder, int capacity) {
+    public CommitCleanupJob(int capacity) {
         commitLogFileNames = new LinkedBlockingQueue<>(capacity);
-        this.commitFolder = commitFolder;
     }
 
     @Override
@@ -36,18 +33,17 @@ public class CommitCleanupJob implements Runnable {
         while(!Thread.currentThread().isInterrupted()) {
             try {
                 String fileName = commitLogFileNames.take();
-                Files.delete(Paths.get(commitFolder + fileName));
+                logger.info("Deleting file '{}'.", fileName);
+                Files.delete(Paths.get(fileName));
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 logger.warn("Job interrupted.", e);
             } catch (IOException e) {
                 logger.warn("Could not delete specified log.", e);
             }
-
-
         }
 
-
+        logger.info("Terminating commit log cleaner.");
     }
 
     public boolean addFileName(String fileName) {
