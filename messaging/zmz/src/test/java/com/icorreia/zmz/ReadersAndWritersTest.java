@@ -46,9 +46,10 @@ public class ReadersAndWritersTest {
         reader.start();
         writer.start();
 
-        writer.write(new BasicMessage<>("Hello world!"));
-        writer.write(new BasicMessage<>("Hello world again!"));
+        writer.write(new BasicMessage("Hello world!"));
+        writer.write(new BasicMessage("Hello world again!"));
 
+        Thread.sleep(2000);
         writer.stop();
         reader.stop();
 
@@ -76,10 +77,11 @@ public class ReadersAndWritersTest {
         reader.start();
         writer.start();
 
-        writer.write(new BasicMessage<>(42));
-        writer.write(new BasicMessage<>(42.0));
-        writer.write(new BasicMessage<>("String"));
+        writer.write(new BasicMessage(42));
+        writer.write(new BasicMessage(42.0));
+        writer.write(new BasicMessage("String"));
 
+        Thread.sleep(2000);
         writer.stop();
         reader.stop();
 
@@ -104,9 +106,9 @@ public class ReadersAndWritersTest {
         reader.start();
         writer.start();
 
-        writer.write(new BasicMessage<>(42));
-        writer.write(new BasicMessage<>(42.0));
-        writer.write(new BasicMessage<>("String"));
+        writer.write(new BasicMessage(42));
+        writer.write(new BasicMessage(42.0));
+        writer.write(new BasicMessage("String"));
 
         writer.stop();
         Thread.sleep(2000);

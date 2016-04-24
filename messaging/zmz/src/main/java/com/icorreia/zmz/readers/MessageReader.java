@@ -4,9 +4,12 @@ import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryonet.Connection;
 import com.esotericsoftware.kryonet.Listener;
 import com.esotericsoftware.kryonet.Server;
+import com.icorreia.commons.messaging.BasicMessage;
 import com.icorreia.commons.messaging.Message;
+import com.icorreia.commons.serialization.Encoder;
 import com.icorreia.zmz.Messenger;
 import org.apache.commons.lang.Validate;
+import org.objenesis.strategy.BaseInstantiatorStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,6 +51,8 @@ public class MessageReader<T extends Message> extends Messenger {
 
     private Thread cleanupThread;
 
+    private Encoder<T> encoder;
+
     /**
      *
      * @param capacity
@@ -56,11 +61,14 @@ public class MessageReader<T extends Message> extends Messenger {
      */
     private MessageReader(int capacity, int port, long commitLogSize, String commitLogFolder, Class<T> clazz) {
         super(clazz);
-        this.server = new Server();
         this.port = port;
         this.messageQueue = new LinkedBlockingQueue<>(capacity);
         this.commitLogFolder = commitLogFolder;
         this.commitLogSize = commitLogSize;
+
+        this.server = new Server();
+        this.encoder = new Encoder<>();
+        this.encoder.registerClass(clazz);
     }
 
     @Override
@@ -86,11 +94,12 @@ public class MessageReader<T extends Message> extends Messenger {
                         T message = (T) object;
                         logger.trace("Received: '{}'.", message.getContents());
                         messageQueue.add(message);
-                        //FIXME
                         String commitLogFilename = commitLogFolder + File.separatorChar + System.currentTimeMillis();
                         try {
-                            File commitLog = new File(commitLogFilename);
-                            commitLog.createNewFile();
+                            //FIXME
+                            encoder.setOutput(commitLogFilename);
+                            encoder.encode(message);
+                            encoder.close();
                             logger.info("Created file '{}'.", commitLogFilename);
                             //TODO Maybe change the addition / name
                             commitCleanupJob.addFileName(commitLogFilename);
@@ -110,13 +119,14 @@ public class MessageReader<T extends Message> extends Messenger {
 
         } catch (IOException e) {
             logger.error("Exception while reading from socket: ", e);
-            server.close();
+            stop();
         }
     }
 
     @Override
     public void stop() {
         try {
+            encoder.close();
             cleanupThread.interrupt();
             cleanupThread.join();
             server.stop();
