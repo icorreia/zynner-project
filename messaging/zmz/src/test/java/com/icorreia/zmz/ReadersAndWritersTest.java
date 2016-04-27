@@ -11,7 +11,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
-import com.icorreia.zmz.readers.MessageReader.MessageReaderBuilder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -36,11 +35,11 @@ public class ReadersAndWritersTest {
         Path commitLogFolder = Files.createTempDirectory("commit_log");
         logger.info("Creating a temporary folder at '{}'", commitLogFolder.toAbsolutePath());
 
-        MessageReader<BasicMessage> reader = MessageReaderBuilder.<BasicMessage>builder().
+        MessageReader<BasicMessage> reader = MessageReader.Builder.<BasicMessage>builder().
                 setPort(12345).
                 setClass(BasicMessage.class).
                 setCommitLogFolder(commitLogFolder.toString()).
-                build();
+                build().orElseGet(null);
         MessageWriter<BasicMessage> writer = new MessageWriter<>("localhost", 12345, BasicMessage.class);
 
         reader.start();
@@ -66,11 +65,11 @@ public class ReadersAndWritersTest {
         Path commitLogFolder = Files.createTempDirectory("commit_log");
         logger.info("Creating a temporary folder at '{}'", commitLogFolder.toAbsolutePath());
 
-        MessageReader<BasicMessage> reader = MessageReaderBuilder.<BasicMessage>builder().
+        MessageReader<BasicMessage> reader = MessageReader.Builder.<BasicMessage>builder().
                 setPort(12345).
                 setClass(BasicMessage.class).
                 setCommitLogFolder(commitLogFolder.toString()).
-                build();
+                build().orElseGet(null);
 
         MessageWriter<BasicMessage> writer = new MessageWriter<>("localhost", 12345, BasicMessage.class);
 
@@ -94,12 +93,12 @@ public class ReadersAndWritersTest {
         Path commitLogFolder = Files.createTempDirectory("commit_log");
         logger.info("Creating a temporary folder at '{}'", commitLogFolder.toAbsolutePath());
 
-        MessageReader<BasicMessage> reader = MessageReaderBuilder.<BasicMessage>builder().
+        MessageReader<BasicMessage> reader = MessageReader.Builder.<BasicMessage>builder().
                 setPort(12345).
                 setClass(BasicMessage.class).
                 setCommitLogFolder(commitLogFolder.toString()).
-                setCommitLogSize(2).
-                build();
+                setCommitLogSize(5).
+                build().orElseGet(null);
 
         MessageWriter<BasicMessage> writer = new MessageWriter<>("localhost", 12345, BasicMessage.class);
 
@@ -112,7 +111,37 @@ public class ReadersAndWritersTest {
 
         writer.stop();
         Thread.sleep(2000);
-        assertEquals("All files should have been cleaned.", 0,  new File(commitLogFolder.toAbsolutePath().toString()).list().length);
+        assertEquals("Only one file should remain.", 1,  new File(commitLogFolder.toAbsolutePath().toString()).list().length);
+        reader.stop();
+
+        assertEquals("Reader should have received 3 messages.", 3, reader.getMessagesProcessed());
+        assertEquals("Writer should have written 3 messages.", 3, writer.getMessagesProcessed());
+    }
+
+    @Test
+    public void testCommitLogOverflow() throws IOException, InterruptedException {
+        Path commitLogFolder = Files.createTempDirectory("commit_log");
+        logger.info("Creating a temporary folder at '{}'", commitLogFolder.toAbsolutePath());
+
+        MessageReader<BasicMessage> reader = MessageReader.Builder.<BasicMessage>builder().
+                setPort(12345).
+                setClass(BasicMessage.class).
+                setCommitLogFolder(commitLogFolder.toString()).
+                setCommitLogSize(1).
+                build().orElseGet(null);
+
+        MessageWriter<BasicMessage> writer = new MessageWriter<>("localhost", 12345, BasicMessage.class);
+
+        reader.start();
+        writer.start();
+
+        writer.write(new BasicMessage(42));
+        writer.write(new BasicMessage(42.0));
+        writer.write(new BasicMessage("String"));
+
+        writer.stop();
+        Thread.sleep(2000);
+        assertEquals("Only one file should remain.", 1,  new File(commitLogFolder.toAbsolutePath().toString()).list().length);
         reader.stop();
 
         assertEquals("Reader should have received 3 messages.", 3, reader.getMessagesProcessed());

@@ -1,5 +1,6 @@
-package com.icorreia.zmz.readers;
+package com.icorreia.zmz.readers.commitlog;
 
+import com.icorreia.zmz.readers.MessageReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.IOException;
