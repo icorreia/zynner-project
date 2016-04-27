@@ -58,10 +58,13 @@ public class Encoder<T extends Serializable> implements Closeable {
      * Must be used along with {@link Decoder#decode(Class<? extends T>)}.
      *
      * @param object
+     * @return
      */
-    public void encode(T object) {
+    public long encode(T object) {
+        output.clear();
         kryo.writeObject(output, object);
         output.endChunks();
+        return output.total();
     }
 
     /**
@@ -69,10 +72,13 @@ public class Encoder<T extends Serializable> implements Closeable {
      * Must be used along with {@link Decoder#decodeWithClass()}.
      *
      * @param object
+     * @return
      */
-    public void encodeWithClass(Object object) {
+    public long encodeWithClass(Object object) {
+        output.clear();
         kryo.writeClassAndObject(output, object);
         output.endChunks();
+        return output.total();
     }
 
     /**
