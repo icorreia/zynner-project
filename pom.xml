@@ -11,7 +11,7 @@
     </properties>
 
     <groupId>com.icorreia.zynner</groupId>
-    <artifactId>zynner</artifactId>
+    <artifactId>zynner-project</artifactId>
     <version>0.1-SNAPSHOT</version>
 
     <modules>
@@ -19,7 +19,7 @@
         <module>coordination</module>
         <module>database</module>
         <module>messaging</module>
-        <module>zynner-server</module>
+        <module>zynner</module>
     </modules>
 
     <dependencyManagement>

@@ -6,7 +6,7 @@
 
     <parent>
         <groupId>com.icorreia.zynner</groupId>
-        <artifactId>zynner</artifactId>
+        <artifactId>zynner-project</artifactId>
         <version>0.1-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>

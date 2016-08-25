@@ -6,12 +6,16 @@
 
     <parent>
         <groupId>com.icorreia.zynner</groupId>
-        <artifactId>zynner</artifactId>
+        <artifactId>zynner-project</artifactId>
         <version>0.1-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>zynner-server</artifactId>
+    <modules>
+        <module>zynner-server</module>
+    </modules>
+
+    <artifactId>zynner</artifactId>
     <packaging>pom</packaging>
 
 </project>

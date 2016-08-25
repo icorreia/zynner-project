@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>zynner</artifactId>
+        <groupId>com.icorreia.zynner</groupId>
+        <version>0.1-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>zynner-server</artifactId>
+
+    <dependencies>
+        <!-- PROJECT -->
+        <dependency>
+            <groupId>com.icorreia.zynner</groupId>
+            <artifactId>commons-messaging</artifactId>
+            <version>0.1-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>com.icorreia.zynner</groupId>
+            <artifactId>commons-serialization</artifactId>
+            <version>0.1-SNAPSHOT</version>
+        </dependency>
+
+        <!-- SERIALIZATION -->
+        <dependency>
+            <groupId>kryonet</groupId>
+            <artifactId>kryonet</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+</project>
